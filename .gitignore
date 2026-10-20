@@ -1,0 +1,98 @@
+# =========================================================================
+# .gitignore for Cute Owl Desktop Pet (Low-Res Pixel Art)
+# =========================================================================
+
+# Build artifacts & temporary binaries
+bin/
+obj/
+*.pdb
+*.ilk
+*.obj
+*.log
+*.tlog
+
+# Executable binaries: ignore all temporary / test executables
+*.exe
+# Allow pre-compiled standalone pet executable for zero-setup execution
+!DesktopPet.exe
+
+# Legacy prototypes and heavy experimental archives
+archive/
+
+# Intermediate / experimental sprite variations and drafts
+assets/sprites/walk_front/
+assets/sprites/walk_profile/
+
+# Intermediate comparison and draft images in assets/
+assets/comparison_reference_vs_matrix.png
+assets/extracted_grid.txt
+assets/eye_crop.png
+assets/owl_sleep_clean.png
+assets/owl_sleep_with_zzz.png
+assets/preview_3way_comparison.png
+assets/preview_beautiful_profile_8x.png
+assets/preview_centered_disc_8x.png
+assets/preview_cute_profile_8x.png
+assets/preview_exact_ref_8x.png
+assets/preview_exact_ref_refined_8x.png
+assets/preview_flight_strip_8x.png
+assets/preview_idle_strip_8x.png
+assets/preview_master_frame_8x.png
+assets/preview_narrow_profile_8x.png
+assets/preview_narrow_profile_walk_8x.png
+assets/preview_profile_comparison_8x.png
+assets/preview_profile_grid_8x.png
+assets/preview_profile_left_right_8x.png
+assets/preview_profile_walk_8x.png
+assets/preview_profile_walk_final_8x.png
+assets/preview_profile_walk_strip_8x.png
+assets/preview_pure_profile_8x.png
+assets/preview_scale_comparison_all_states.png
+assets/preview_single_eye_profile_8x.png
+assets/preview_sleep_grid_vs_ref.png
+assets/preview_sleep_master_8x.png
+assets/preview_sleep_strip_8x.png
+assets/preview_walk_strip_8x.png
+assets/profile_34.png
+assets/profile_beautiful_base.png
+assets/profile_pure_base.png
+assets/profile_true.png
+assets/test_48_bicubic.png
+assets/test_48_bicubic_8x.png
+assets/test_48_nn.png
+assets/test_48_nn_8x.png
+assets/test_ref_quantized_8x.png
+
+# Node.js (for legacy archive prototypes)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE, Editor & Tooling files
+.vs/
+.vscode/
+.idea/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+.gemini/
+
+# Operating System temporary files
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.Spotlight-V100
+.Trashes
+
+# Scratch files & backups
+*.tmp
+*.temp
+*.swp
+*.bak
+*~

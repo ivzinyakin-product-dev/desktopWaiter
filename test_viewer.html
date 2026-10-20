@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>🦉 Clockwork Owl — Low-Res Pixel Art Inspector</title>
+    <style>
+        :root {
+            --bg-dark: #0F1218;
+            --panel-bg: #181E29;
+            --panel-border: #2A3447;
+            --accent-gold: #E5A93C;
+            --accent-cyan: #00E5FF;
+            --text-main: #E2E8F0;
+            --text-dim: #94A3B8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 22px;
+            color: var(--accent-gold);
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        .main-card {
+            background: var(--panel-bg);
+            border-radius: 12px;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 780px;
+            width: 100%;
+        }
+
+        .state-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #11151F;
+            padding: 4px;
+            border-radius: 8px;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-dim);
+            padding: 8px 18px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-gold);
+            color: #12151C;
+        }
+
+        /* Viewport & Pixel Art Display */
+        .viewport-wrapper {
+            position: relative;
+            background: #090B10;
+            border: 2px dashed #2A3447;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            margin-bottom: 20px;
+            background-image: 
+                linear-gradient(45deg, #121620 25%, transparent 25%), 
+                linear-gradient(-45deg, #121620 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #121620 75%), 
+                linear-gradient(-45deg, transparent 75%, #121620 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+        }
+
+        #pixelCanvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            display: block;
+        }
+
+        /* Controls */
+        .controls-row {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 16px;
+            width: 100%;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #11151F;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .btn {
+            background: #252D3D;
+            border: 1px solid #364257;
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+
+        .btn:hover {
+            background: #323C50;
+            border-color: var(--accent-gold);
+        }
+
+        .btn.active {
+            background: var(--accent-gold);
+            color: #0F1218;
+            font-weight: 600;
+        }
+
+        /* Palette bar */
+        .palette-section {
+            width: 100%;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--panel-border);
+        }
+
+        .palette-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .swatches {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .swatch {
+            width: 28px;
+            height: 28px;
+            border-radius: 4px;
+            border: 1px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .swatch:hover::after {
+            content: attr(data-hex);
+            position: absolute;
+            bottom: 32px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #000;
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        /* Status message */
+        .status-box {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--accent-cyan);
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 6px;
+            padding: 8px 14px;
+            text-align: center;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🦉 Cute Little Owl — Low-Res Inspector</h1>
+        <div class="subtitle">Инспектор пиксельной анимации и палитры (Чистый Совёнок 48×48)</div>
+    </header>
+
+    <div class="main-card">
+        <!-- State Selector -->
+        <div class="state-tabs">
+            <button class="tab-btn active" onclick="switchState('idle')">Покой (Idle)</button>
+            <button class="tab-btn" onclick="switchState('blink')">Моргание (Blink)</button>
+            <button class="tab-btn" onclick="switchState('walk')">Ходьба (Walk)</button>
+            <button class="tab-btn" onclick="switchState('profile_spec')">🦉 Походка в профиль (4 кадра)</button>
+            <button class="tab-btn" onclick="switchState('sleep')">Сон (Sleep)</button>
+            <button class="tab-btn" onclick="switchState('fly')">🪽 Полёт (Fly 45°)</button>
+        </div>
+
+        <!-- Canvas Viewport -->
+        <div class="viewport-wrapper" style="width: 320px; height: 320px;">
+            <canvas id="pixelCanvas" width="320" height="320"></canvas>
+        </div>
+
+        <!-- Animation Controls -->
+        <div class="controls-row">
+            <div class="control-group">
+                <button class="btn" id="playBtn" onclick="togglePlay()">⏸ Пауза</button>
+                <button class="btn" onclick="stepFrame(-1)">⏮ Пред</button>
+                <button class="btn" onclick="stepFrame(1)">След ⏭</button>
+                <button class="btn" id="flipBtn" onclick="toggleFlip()">↔️ Разворот</button>
+                <span id="frameCounter" style="color: var(--accent-gold); font-weight: bold; min-width: 50px; text-align: center;">Кадр 1/4</span>
+            </div>
+
+            <div class="control-group">
+                <span>Масштаб:</span>
+                <button class="btn" onclick="setZoom(2)">2x</button>
+                <button class="btn" onclick="setZoom(4)">4x</button>
+                <button class="btn active" id="zoom6Btn" onclick="setZoom(6)">6x</button>
+                <button class="btn" onclick="setZoom(8)">8x</button>
+            </div>
+
+            <div class="control-group">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="gridToggle" onchange="toggleGrid(this.checked)" checked> Сетка пикселей
+                </label>
+            </div>
+        </div>
+
+        <!-- Speed control -->
+        <div class="controls-row">
+            <div class="control-group" style="width: 100%; justify-content: space-between;">
+                <span>Скорость анимации:</span>
+                <input type="range" id="fpsSlider" min="2" max="16" value="6" style="flex: 1; margin: 0 16px;" oninput="updateFps(this.value)">
+                <span id="fpsLabel" style="min-width: 60px; text-align: right; color: var(--accent-gold);">6 FPS</span>
+            </div>
+        </div>
+
+        <!-- Status notice -->
+        <div id="statusNotice" class="status-box">
+            ℹ️ Графика пока не сгенерирована. Отображается процедурный силуэт чистого совёнка 48x48.
+        </div>
+
+        <!-- Profile Coordinates Info (visible in profile_spec) -->
+        <div id="profileCoordsBox" style="display: none; margin-top: 14px; width: 100%; font-size: 11px; background: rgba(229, 169, 60, 0.08); border: 1px solid rgba(229, 169, 60, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: bold; color: var(--accent-gold); margin-bottom: 6px;">📐 Анатомические узлы для боковой анимации (48×48 px):</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; color: var(--text-dim);">
+                <div>• <b>Ушной пучок (хохолок):</b> Y: 3..10, X: 17..26</div>
+                <div>• <b>Глаз и зрачок:</b> Y: 13..19, X: 30..36</div>
+                <div>• <b>Клюв-крючок:</b> Y: 18..22, X: 37..43</div>
+                <div>• <b>Боковое крыло:</b> Y: 22..38, X: 9..28</div>
+                <div>• <b>Хвостик слева:</b> Y: 36..41, X: 5..14</div>
+                <div>• <b>Грудка спереди:</b> Y: 24..39, X: 28..39</div>
+                <div style="grid-column: span 2;">• <b>Лапки (глубина):</b> Y: 41..45, X: 19..33 (левая 19..26, правая 27..33)</div>
+            </div>
+        </div>
+
+        <!-- Sleep Coordinates Info (visible in sleep) -->
+        <div id="sleepCoordsBox" style="display: none; margin-top: 14px; width: 100%; font-size: 11px; background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: bold; color: var(--accent-cyan); margin-bottom: 6px;">💤 Анатомические узлы состояния «Сон» (48×48 px):</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; color: var(--text-dim);">
+                <div>• <b>Малая буква z:</b> Y: 3..8, X: 30..35</div>
+                <div>• <b>Большая буква Z:</b> Y: 1..7, X: 39..45</div>
+                <div>• <b>Опущенные ушки:</b> Y: 10..17, X: 7..40</div>
+                <div>• <b>Сомкнутые веки:</b> Y: 20..23, X: 14..21, 26..33</div>
+                <div>• <b>Распушённая грудка:</b> Y: 27..42, X: 4..43 (осела на 3 px)</div>
+                <div>• <b>Опорные лапки:</b> Y: 43..44, X: 16..33 (горизонт пола)</div>
+            </div>
+        </div>
+
+        <!-- Flight Coordinates Info (visible in fly) -->
+        <div id="flyCoordsBox" style="display: none; margin-top: 14px; width: 100%; font-size: 11px; background: rgba(229, 169, 60, 0.08); border: 1px solid rgba(229, 169, 60, 0.25); border-radius: 8px; padding: 12px;">
+            <div style="font-weight: bold; color: var(--accent-gold); margin-bottom: 6px;">🪽 Анатомические узлы состояния «Полёт» (45° ¾ вид, 48×48 px):</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; color: var(--text-dim);">
+                <div>• <b>Цикл взмаха:</b> 6-тактный ping-pong (0→1→2→3→2→1)</div>
+                <div>• <b>Размах маховых крыльев:</b> Y: 7..38, X: 1..47</div>
+                <div>• <b>Поджатые лапки:</b> Y: 38..41, X: 22..35 (не касаются пола)</div>
+                <div>• <b>Хвостик (руль высоты):</b> Y: 34..42, X: 10..18</div>
+                <div>• <b>Взгляд и лицевой диск:</b> Y: 17..24, X: 22..38</div>
+                <div>• <b>Темп анимации:</b> 11–12 FPS (85–90 мс на взмах)</div>
+            </div>
+        </div>
+
+        <!-- Color Palette -->
+        <div class="palette-section">
+            <div class="palette-title">🎨 Палитра Чистого Совёнка (Natural Warm 11-Color)</div>
+            <div class="swatches" id="swatchesContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('pixelCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const NATIVE_W = 48;
+        const NATIVE_H = 48;
+        let zoom = 6;
+        let showGrid = true;
+        let isFlipped = false;
+        let currentState = 'idle';
+        let currentFrame = 0;
+        let isPlaying = true;
+        let fps = 6;
+        let animInterval = null;
+        let frameImages = [];
+        let hasRealFrames = false;
+
+        const paletteColors = [
+            '#1A0F0A', '#120906', '#361F12', '#5A3820',
+            '#7D5330', '#966840', '#D6BA98', '#EAD8BC',
+            '#F5ECE0', '#FFA726', '#F59E0B', '#E65100',
+            '#B45309'
+        ];
+
+        function initPalette() {
+            const container = document.getElementById('swatchesContainer');
+            paletteColors.forEach(hex => {
+                const sw = document.createElement('div');
+                sw.className = 'swatch';
+                sw.style.backgroundColor = hex;
+                sw.setAttribute('data-hex', hex);
+                sw.title = hex;
+                container.appendChild(sw);
+            });
+        }
+
+        function setZoom(z) {
+            zoom = z;
+            document.querySelectorAll('.control-group button').forEach(b => {
+                if (b.innerText === `${z}x`) b.classList.add('active');
+                else if (b.innerText.endsWith('x')) b.classList.remove('active');
+            });
+            resizeCanvas();
+            render();
+        }
+
+        function toggleGrid(enabled) {
+            showGrid = enabled;
+            render();
+        }
+
+        function updateFps(val) {
+            fps = parseInt(val);
+            document.getElementById('fpsLabel').innerText = `${fps} FPS`;
+            resetTimer();
+        }
+
+        function resizeCanvas() {
+            canvas.width = NATIVE_W * zoom;
+            canvas.height = NATIVE_H * zoom;
+            canvas.parentElement.style.width = `${canvas.width}px`;
+            canvas.parentElement.style.height = `${canvas.height}px`;
+        }
+
+        function switchState(state) {
+            currentState = state;
+            currentFrame = 0;
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            const profileCoords = document.getElementById('profileCoordsBox');
+            if (profileCoords) profileCoords.style.display = (state === 'profile_spec') ? 'block' : 'none';
+            const sleepCoords = document.getElementById('sleepCoordsBox');
+            if (sleepCoords) sleepCoords.style.display = (state === 'sleep') ? 'block' : 'none';
+            const flyCoords = document.getElementById('flyCoordsBox');
+            if (flyCoords) flyCoords.style.display = (state === 'fly') ? 'block' : 'none';
+
+            if (state === 'sleep') {
+                updateFps(2);
+                document.getElementById('fpsSlider').value = 2;
+            } else if (state === 'idle') {
+                updateFps(4);
+                document.getElementById('fpsSlider').value = 4;
+            } else if (state === 'fly') {
+                updateFps(11);
+                document.getElementById('fpsSlider').value = 11;
+            } else {
+                updateFps(6);
+                document.getElementById('fpsSlider').value = 6;
+            }
+
+            checkFrames();
+        }
+
+        function checkFrames() {
+            frameImages = [];
+            currentFrame = 0;
+
+            if (currentState === 'blink') {
+                const img = new Image();
+                img.src = `assets/sprites/idle/idle_blink.png?t=${Date.now()}`;
+                img.onload = () => {
+                    frameImages = [img];
+                    hasRealFrames = true;
+                    document.getElementById('statusNotice').innerText = `✅ Загружен кадр моргания idle_blink.png (${NATIVE_W}x${NATIVE_H} px). Закрытые веки.`;
+                    render();
+                };
+                img.onerror = () => {
+                    hasRealFrames = false;
+                    document.getElementById('statusNotice').innerText = `ℹ️ assets/sprites/idle/idle_blink.png не найден.`;
+                    render();
+                };
+                return;
+            }
+
+            if (currentState === 'profile_spec') {
+                const frameFiles = ['frame_0.png', 'frame_1.png', 'frame_2.png', 'frame_3.png'];
+                const loaded = new Array(frameFiles.length);
+                let checked = 0;
+                frameFiles.forEach((file, index) => {
+                    const img = new Image();
+                    img.src = `assets/sprites/walk_profile/${file}?t=${Date.now()}`;
+                    img.onload = () => {
+                        loaded[index] = img;
+                        checked++;
+                        if (checked === frameFiles.length) finalize();
+                    };
+                    img.onerror = () => {
+                        checked++;
+                        if (checked === frameFiles.length) finalize();
+                    };
+                });
+                function finalize() {
+                    const validFrames = loaded.filter(img => img && img.complete && img.naturalWidth > 0);
+                    if (validFrames.length > 0) {
+                        frameImages = validFrames;
+                        hasRealFrames = true;
+                        document.getElementById('statusNotice').innerText = `✅ Загружен полный 4-кадровый цикл походки в профиль (${NATIVE_W}x${NATIVE_H} px). Шаговые фазы, подъём лапок и боббинг корпуса.`;
+                    } else {
+                        hasRealFrames = false;
+                        document.getElementById('statusNotice').innerText = `ℹ️ Кадры походки в профиль не найдены.`;
+                    }
+                    render();
+                }
+                return;
+            }
+
+            const frameFiles = (currentState === 'idle')
+                ? ['frame_0.png', 'frame_1.png', 'frame_2.png', 'frame_3.png', 'idle_blink.png']
+                : ['frame_0.png', 'frame_1.png', 'frame_2.png', 'frame_3.png'];
+
+            const loaded = new Array(frameFiles.length);
+            let checked = 0;
+
+            frameFiles.forEach((file, index) => {
+                const img = new Image();
+                img.src = `assets/sprites/${currentState === 'idle' ? 'idle' : currentState}/${file}?t=${Date.now()}`;
+                img.onload = () => {
+                    loaded[index] = img;
+                    checked++;
+                    if (checked === frameFiles.length) finalize();
+                };
+                img.onerror = () => {
+                    checked++;
+                    if (checked === frameFiles.length) finalize();
+                };
+            });
+
+            function finalize() {
+                const validFrames = loaded.filter(img => img && img.complete && img.naturalWidth > 0);
+                if (validFrames.length > 0) {
+                    if (currentState === 'fly' && validFrames.length === 4) {
+                        // Smooth 6-beat ping-pong flap cycle: Up -> MidUp -> MidDown -> Down -> MidDown -> MidUp
+                        frameImages = [validFrames[0], validFrames[1], validFrames[2], validFrames[3], validFrames[2], validFrames[1]];
+                        hasRealFrames = true;
+                        document.getElementById('statusNotice').innerText = `✅ Загружен полный 6-тактный ping-pong цикл полёта 45° (${NATIVE_W}x${NATIVE_H} px). Взмах вверх, средний размах и силовой удар вниз.`;
+                    } else {
+                        frameImages = validFrames;
+                        hasRealFrames = true;
+                        if (currentState === 'idle' && validFrames.length === 5) {
+                            document.getElementById('statusNotice').innerText = `✅ Загружен полный цикл Idle (5 кадров): 4 фазы дыхания + 5-й кадр моргания (${NATIVE_W}x${NATIVE_H} px)`;
+                        } else if (currentState === 'sleep' && validFrames.length === 4) {
+                            document.getElementById('statusNotice').innerText = `✅ Загружен полный цикл сна (4 кадра): уютное сопение распушённого совёнка и парящие буквы Zzz (${NATIVE_W}x${NATIVE_H} px)`;
+                        } else if (validFrames.length === 1) {
+                            document.getElementById('statusNotice').innerText = `✅ Загружен базовый мастер-кадр frame_0.png (${NATIVE_W}x${NATIVE_H} px). Режим детальной инспекции.`;
+                        } else {
+                            document.getElementById('statusNotice').innerText = `✅ Загружено ${validFrames.length} кадров из assets/sprites/${currentState}/ (${NATIVE_W}x${NATIVE_H} px)`;
+                        }
+                    }
+                } else {
+                    hasRealFrames = false;
+                    document.getElementById('statusNotice').innerText = `ℹ️ Графика для '${currentState}' ещё не сгенерирована. Отображается процедурный силуэт.`;
+                }
+                render();
+            }
+        }
+
+        function drawPlaceholderOwl(frame) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Breath/bob cycle (1px vertical movement on odd frames)
+            const bobY = (frame === 1 || frame === 2) ? -1 : 0;
+            const w = NATIVE_W;
+            const h = NATIVE_H;
+
+            function p(x, y, color) {
+                ctx.fillStyle = color;
+                ctx.fillRect(x * zoom, (y + bobY) * zoom, zoom, zoom);
+            }
+
+            function pRect(x, y, rw, rh, color) {
+                ctx.fillStyle = color;
+                ctx.fillRect(x * zoom, (y + bobY) * zoom, rw * zoom, rh * zoom);
+            }
+
+            // Ear tufts (soft feathers)
+            pRect(14, 11, 4, 5, '#9E805F');
+            pRect(15, 12, 2, 4, '#CDB28E');
+            pRect(30, 11, 4, 5, '#9E805F');
+            pRect(31, 12, 2, 4, '#CDB28E');
+
+            // Owl main head and body (warm beige sand)
+            pRect(14, 15, 20, 24, '#CDB28E');
+            pRect(16, 14, 16, 2, '#CDB28E'); // Crown
+            pRect(16, 38, 16, 2, '#9E805F'); // Lower bottom shade
+
+            // Fluffy wings on the sides
+            pRect(12, 22, 3, 14, '#9E805F');
+            pRect(13, 23, 2, 12, '#CDB28E');
+            pRect(33, 22, 3, 14, '#9E805F');
+            pRect(33, 23, 2, 12, '#CDB28E');
+
+            // Soft light cream belly
+            pRect(18, 25, 12, 12, '#EEDBC0');
+            pRect(19, 24, 10, 1, '#FDF8EE'); // Light edge
+
+            // Big expressive amber eyes (6x6)
+            pRect(15, 17, 6, 6, '#FFB300');
+            pRect(27, 17, 6, 6, '#FFB300');
+
+            // Eye shading (lower half)
+            pRect(15, 20, 6, 3, '#D97706');
+            pRect(27, 20, 6, 3, '#D97706');
+
+            // Dark pupils (3x3)
+            pRect(17, 19, 3, 3, '#1C120C');
+            pRect(29, 19, 3, 3, '#1C120C');
+
+            // White eye glint / catchlight (1x1 in top left of eye)
+            p(16, 18, '#FDF8EE');
+            p(28, 18, '#FDF8EE');
+
+            // Cute small orange beak (2x3)
+            pRect(23, 21, 2, 3, '#F59E0B');
+            pRect(23, 23, 2, 1, '#B45309');
+
+            // Small cute feet on baseline Y=42..44
+            const footShift = (currentState === 'walk' && (frame === 1 || frame === 3)) ? 2 : 0;
+            const leftY = (currentState === 'walk' && frame === 0) ? 41 : 42;
+            const rightY = (currentState === 'walk' && frame === 2) ? 41 : 42;
+
+            pRect(18 - footShift, leftY, 4, 2, '#F59E0B');
+            pRect(26 + footShift, rightY, 4, 2, '#F59E0B');
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (hasRealFrames && frameImages[currentFrame] && frameImages[currentFrame].complete) {
+                ctx.imageSmoothingEnabled = false;
+                if (isFlipped) {
+                    ctx.save();
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(frameImages[currentFrame], -canvas.width, 0, canvas.width, canvas.height);
+                    ctx.restore();
+                } else {
+                    ctx.drawImage(frameImages[currentFrame], 0, 0, canvas.width, canvas.height);
+                }
+            } else {
+                drawPlaceholderOwl(currentFrame);
+            }
+
+            // Draw pixel grid
+            if (showGrid && zoom >= 4) {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                ctx.lineWidth = 1;
+                for (let x = 0; x <= canvas.width; x += zoom) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + 0.5, 0);
+                    ctx.lineTo(x + 0.5, canvas.height);
+                    ctx.stroke();
+                }
+                for (let y = 0; y <= canvas.height; y += zoom) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y + 0.5);
+                    ctx.lineTo(canvas.width, y + 0.5);
+                    ctx.stroke();
+                }
+            }
+
+            const total = frameImages.length || 4;
+            if (currentState === 'idle' && total === 5) {
+                const names = ['Кадр 1/5 (Покой)', 'Кадр 2/5 (Вдох)', 'Кадр 3/5 (Пик)', 'Кадр 4/5 (Выдох)', 'Кадр 5/5 (Моргание)'];
+                document.getElementById('frameCounter').innerText = names[currentFrame] || `Кадр ${currentFrame + 1}/5`;
+            } else if (currentState === 'walk' && total === 4) {
+                const names = ['Кадр 1/4 (Контакт A - Нейтраль)', 'Кадр 2/4 (Пронос A - Шаг передней лапки)', 'Кадр 3/4 (Контакт B - Опора)', 'Кадр 4/4 (Пронос B - Шаг задней лапки)'];
+                document.getElementById('frameCounter').innerText = names[currentFrame] || `Кадр ${currentFrame + 1}/4`;
+            } else if (currentState === 'profile_spec' && total === 4) {
+                const names = ['Кадр 1/4 (Контакт A - Нейтраль)', 'Кадр 2/4 (Пронос A - Шаг передней лапки)', 'Кадр 3/4 (Контакт B - Опора)', 'Кадр 4/4 (Пронос B - Шаг задней лапки)'];
+                document.getElementById('frameCounter').innerText = names[currentFrame] || `Кадр ${currentFrame + 1}/4`;
+            } else if (currentState === 'profile_spec' && total === 2) {
+                const names = ['Взгляд вправо (1/2)', 'Взгляд влево (2/2)'];
+                document.getElementById('frameCounter').innerText = names[currentFrame] || `Кадр ${currentFrame + 1}/2`;
+            } else {
+                document.getElementById('frameCounter').innerText = total === 1 ? `Кадр 1/1 (Базовый)` : `Кадр ${currentFrame + 1}/${total}`;
+            }
+        }
+
+        function toggleFlip() {
+            isFlipped = !isFlipped;
+            const btn = document.getElementById('flipBtn');
+            if (btn) btn.classList.toggle('active', isFlipped);
+            render();
+        }
+
+        function stepFrame(dir) {
+            const total = frameImages.length || 4;
+            currentFrame = (currentFrame + dir + total) % total;
+            render();
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            document.getElementById('playBtn').innerText = isPlaying ? '⏸ Пауза' : '▶ Старт';
+            if (isPlaying) resetTimer();
+            else clearInterval(animInterval);
+        }
+
+        function resetTimer() {
+            clearInterval(animInterval);
+            if (isPlaying) {
+                animInterval = setInterval(() => {
+                    stepFrame(1);
+                }, 1000 / fps);
+            }
+        }
+
+        // Initialize
+        resizeCanvas();
+        initPalette();
+        checkFrames();
+        resetTimer();
+    </script>
+</body>
+</html>
